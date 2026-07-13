@@ -4,3 +4,6 @@ node_modules/
 .env
 out/
 build/
+
+# coverage reports
+coverage/
