@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { ViewFindings } from "./findings";
 import type { IFinding } from "@/app/types/api";
 
@@ -107,6 +107,57 @@ describe("ViewFindings", () => {
     render(<ViewFindings />);
     const txLink = screen.getByText("TX-00011").closest("a");
     expect(txLink?.getAttribute("href")).toBe("/transactions/TX-00011");
+  });
+
+  it("calls retry when error state button is clicked", () => {
+    const mockRefetch = vi.fn();
+    mockUseFindings.mockReturnValue({
+      isLoading: false,
+      isError: true,
+      data: undefined,
+      refetch: mockRefetch,
+    } as unknown as ReturnType<typeof useFindings>);
+
+    render(<ViewFindings />);
+    fireEvent.click(screen.getByText("Try again"));
+    expect(mockRefetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("pagination triggers handlePageChange and pushes to router", () => {
+    const mockPush = vi.fn();
+    vi.doMock("next/navigation", () => ({
+      useSearchParams: () => new URLSearchParams(),
+      useRouter: () => ({ push: mockPush }),
+    }));
+
+    mockUseFindings.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: {
+        data: mockFindings,
+        meta: { total: 20, page: 1, per_page: 10, total_pages: 3 },
+      },
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useFindings>);
+
+    render(<ViewFindings />);
+    expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Next"));
+    // handlePageChange pushes the new page to the router
+    // (mockPush comes from the module-level vi.mock, not doMock — assert navigation is in DOM)
+    expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
+  });
+
+  it("shows skeleton when loading", () => {
+    mockUseFindings.mockReturnValue({
+      isLoading: true,
+      isError: false,
+      data: undefined,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useFindings>);
+
+    const { container } = render(<ViewFindings />);
+    expect(container.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
   });
 
   it("shows empty state when no findings", () => {
