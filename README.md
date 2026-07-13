@@ -1,36 +1,160 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TariffCorp — Frontend
 
-## Getting Started
+Trade compliance web application. Surfaces financial exposure across import declarations, products, and checker findings — making the highest-leverage corrections obvious and actionable.
 
-First, run the development server:
+---
+
+## Quick Start
 
 ```bash
+# Install dependencies
+npm install
+
+# Start in development mode
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app runs at `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> Requires the backend API running at `http://localhost:3001`. See `../backend/README.md` for setup instructions.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Environment
 
-To learn more about Next.js, take a look at the following resources:
+Create a `.env.local` file in the project root:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This is already set by default — only change it if the backend runs on a different port.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Pages
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Page | URL | Job |
+|------|-----|-----|
+| **Dashboard** | `/` | Ten-second financial health scan. KPIs, duty gap, top offenders by broker/port/product. Every number links to its source records. |
+| **Transactions** | `/transactions` | All import declarations. Filter by status, broker, port. Unmatched transactions (no linked product) are surfaced prominently. |
+| **Transaction detail** | `/transactions/:id` | Declared fields, linked product, checker finding, duty gap. |
+| **Products** | `/products` | Master catalog with open findings count per product. Filter by type or findings. |
+| **Product detail** | `/products/:id` | Classification fields, edit form, linked transactions, active findings. Editing a product immediately re-evaluates the checker for all linked transactions. |
+| **Findings** | `/findings` | Complete checker ledger, always ordered by exposure descending. "Fix Product →" CTA per row. |
+
+---
+
+## Golden Path (≤4 clicks)
+
+```
+Dashboard
+  → Click a product in "By Product" top offenders
+      → Product detail (/products/:id)
+          → Click "Edit Product" → change a field → Save
+              → Toast "Product updated. Findings re-evaluated."
+                  → Findings refresh automatically
+```
+
+---
+
+## Architecture
+
+**Next.js 16 App Router** with the coordinator pattern — route files are minimal, all orchestration lives in View components under `app/views/`.
+
+```
+app/
+├── (routes)/ (public)/      # Route files — render Views only
+├── views/                   # Page coordinators (one per page)
+├── hooks/                   # TanStack Query hooks (one per resource)
+├── components/
+│   ├── structure/nav/       # Persistent navigation + theme toggle
+│   └── ui/                  # Shared components (badge, skeleton, etc.)
+├── services/http/rest.ts    # HTTP client (restClient)
+├── types/api.ts             # All API TypeScript interfaces
+├── constants/query-keys.ts  # TanStack Query key factory
+└── utils/format.ts          # formatCurrency, formatDate, formatExposure
+```
+
+---
+
+## Key Decisions
+
+**TanStack Query** for all server state — handles loading, error, and stale states declaratively. `staleTime: 30s` on all queries. Mutations invalidate related queries in `onSuccess`.
+
+**Coordinator pattern** — Views orchestrate data and components. Route `page.tsx` files are one-liners. This keeps pages testable and composable.
+
+**Tailwind CSS v4 with semantic tokens** — all colors use CSS variables (`bg-card`, `text-destructive`, `border-border`) so light/dark mode switching is automatic. No hardcoded color values in components.
+
+**Theme switching via `next-themes`** — defaults to OS preference (`prefers-color-scheme`). Manual toggle (sun/moon) in the nav bar persists to `localStorage`. `suppressHydrationWarning` on `<html>` prevents React hydration mismatch.
+
+**URL-persisted filters** — all filter and pagination state lives in the URL query string. A page refresh restores the exact same view.
+
+**`optimizePackageImports`** in `next.config.ts` — prevents full icon library bundles from loading on import.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16 (App Router) |
+| UI | React 19 + TypeScript (strict) |
+| Styling | Tailwind CSS v4 |
+| Server state | TanStack Query v5 |
+| HTTP client | Custom `restClient` (fetch wrapper) |
+| Theme | next-themes |
+| Testing | Vitest + React Testing Library |
+
+---
+
+## Tests
+
+```bash
+npm test              # Run full suite
+npm run test:watch    # Watch mode
+npm run test:coverage # Coverage report
+```
+
+49 tests covering format utilities, TanStack Query hooks (mocked `restClient`), and View components.
+
+---
+
+## Available Scripts
+
+```bash
+npm run dev          # Development server (http://localhost:3000)
+npm run build        # Production build
+npm run start        # Production server
+npm run tsc          # TypeScript check (no emit)
+npm run lint         # ESLint
+npm test             # Vitest
+npm run test:watch   # Vitest watch
+npm run test:coverage # Coverage report
+```
+
+---
+
+## Known Limitations
+
+- Transactions list sort (by exposure) is done client-side — the backend does not expose a sort parameter for transactions
+- Product detail returns all linked transactions and findings without pagination
+- No optimistic update on the findings ledger during product edit — the list refetches after the mutation settles
+- Dashboard aggregates recomputed on every request — no caching layer on the backend
+
+---
+
+## AI Usage
+
+The majority of implementation was generated with AI assistance (Kilo / Claude).
+
+| Area | AI contribution | Validation |
+|------|----------------|------------|
+| Project scaffold | Full — `create-next-app` + dependency setup | Verified `npm run build` and `npm run dev` pass |
+| `app/types/api.ts` | Generated from backend port interfaces and PRD | Cross-checked field by field against Swagger at `/api/docs` |
+| TanStack Query hooks | Generated patterns, mock test structure | All 13 hook tests reviewed and run manually |
+| View components | Generated structure, Tailwind classes | Tested in browser across light/dark mode and 3 viewport sizes |
+| Format utilities | Generated | 13 unit tests written and verified |
+| Dark mode tokens | Generated token mapping | Manually verified contrast ratios in both themes |
+
+All AI-generated code was reviewed for correctness. The golden path (Dashboard → Product → Edit → findings refresh) was verified end-to-end manually.

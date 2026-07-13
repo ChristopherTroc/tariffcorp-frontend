@@ -1,0 +1,24 @@
+schema: spec-driven
+
+context: |
+  Tech stack: Next.js (App Router), React, TypeScript, Tailwind CSS, TanStack Query, Vitest
+  This is a frontend web application project.
+
+rules:
+  proposal:
+    - Load and apply the nextjs-react-expert skill before writing this artifact
+    - Load and apply the tailwindcss skill before writing this artifact
+    - Keep proposal under 2 pages; focus on why, not how
+
+  design:
+    - Load and apply the nextjs-react-expert skill before writing this artifact
+    - Load and apply the tailwindcss skill before writing this artifact
+
+  tasks:
+    - Load and apply the nextjs-react-expert skill before writing this artifact
+    - Load and apply the tailwindcss skill before writing this artifact
+    - Each task must be implementable in one session
+
+  apply:
+    - Load and apply the nextjs-react-expert skill before implementing any task
+    - Load and apply the tailwindcss skill before implementing any task involving UI components
