@@ -47,6 +47,9 @@ export function useUpdateProduct() {
       void queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.products(),
       });
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.dashboard(),
+      });
     },
   });
 }

@@ -79,7 +79,7 @@ describe("useUpdateProduct", () => {
     mockPatch.mockReset();
   });
 
-  it("calls PATCH and invalidates productDetail and findings on success", async () => {
+  it("calls PATCH and invalidates related queries on success", async () => {
     const updatedProduct: IProduct = { ...mockProduct };
     mockPatch.mockResolvedValue({ data: updatedProduct });
     mockGet.mockResolvedValue({ data: { product: mockProduct, transactions: [], findings: [] } });

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
-import { Skeleton, SkeletonCard, SkeletonTable } from "./skeleton";
+import { Skeleton, SkeletonTable } from "./skeleton";
 
 describe("Skeleton", () => {
   it("renders with animate-pulse class", () => {
@@ -16,13 +16,6 @@ describe("Skeleton", () => {
   it("merges custom className", () => {
     const { container } = render(<Skeleton className="h-8 w-32" />);
     expect(container.firstChild).toHaveClass("h-8", "w-32");
-  });
-});
-
-describe("SkeletonCard", () => {
-  it("renders two skeleton elements inside a card wrapper", () => {
-    const { container } = render(<SkeletonCard />);
-    expect(container.querySelectorAll(".animate-pulse").length).toBe(2);
   });
 });
 

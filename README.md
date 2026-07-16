@@ -2,6 +2,10 @@
 
 Trade compliance web application. Surfaces financial exposure across import declarations, products, and checker findings — making the highest-leverage corrections obvious and actionable.
 
+## Design
+
+UI based on the Figma designs: [TarifCorp](https://www.figma.com/design/8efC3uSGdXhCLXFl4NmwKE/TarifCorp?m=auto&t=yPcgQYaY9w6Jg1Ux-1)
+
 ---
 
 ## Quick Start
@@ -60,15 +64,15 @@ Dashboard
 
 ## Architecture
 
-**Next.js 16 App Router** with the coordinator pattern — route files are minimal, all orchestration lives in View components under `app/views/`.
+**Next.js 16 App Router** with the coordinator pattern — route files stay thin; orchestration lives in View components under `app/views/`. See [`docs/architecture.md`](docs/architecture.md) for the full layout.
 
 ```
 app/
-├── (routes)/ (public)/      # Route files — render Views only
-├── views/                   # Page coordinators (one per page)
+├── page.tsx / findings/ / products/ / transactions/   # Routes → Views
+├── views/                   # Page coordinators
 ├── hooks/                   # TanStack Query hooks (one per resource)
 ├── components/
-│   ├── structure/nav/       # Persistent navigation + theme toggle
+│   ├── structure/sidebar/   # Persistent navigation + theme toggle
 │   └── ui/                  # Shared components (badge, skeleton, etc.)
 ├── services/http/rest.ts    # HTTP client (restClient)
 ├── types/api.ts             # All API TypeScript interfaces
@@ -80,17 +84,15 @@ app/
 
 ## Key Decisions
 
-**TanStack Query** for all server state — handles loading, error, and stale states declaratively. `staleTime: 30s` on all queries. Mutations invalidate related queries in `onSuccess`.
+**TanStack Query** for all server state — loading, error, and stale states. `staleTime: 30s` on queries. Product updates invalidate products, findings, and dashboard.
 
-**Coordinator pattern** — Views orchestrate data and components. Route `page.tsx` files are one-liners. This keeps pages testable and composable.
+**Coordinator pattern** — Views orchestrate data and components. Route `page.tsx` files render a View (optionally wrapped in `Suspense` for URL search params).
 
-**Tailwind CSS v4 with semantic tokens** — all colors use CSS variables (`bg-card`, `text-destructive`, `border-border`) so light/dark mode switching is automatic. No hardcoded color values in components.
+**Tailwind CSS v4 with semantic tokens** — colors use CSS variables (`bg-card`, `text-destructive`, `border-border`) so light/dark switching is automatic.
 
-**Theme switching via `next-themes`** — defaults to OS preference (`prefers-color-scheme`). Manual toggle (sun/moon) in the nav bar persists to `localStorage`. `suppressHydrationWarning` on `<html>` prevents React hydration mismatch.
+**Theme switching via `next-themes`** — defaults to dark (`defaultTheme="dark"`, system preference disabled). Manual toggle in the sidebar persists to `localStorage`.
 
-**URL-persisted filters** — all filter and pagination state lives in the URL query string. A page refresh restores the exact same view.
-
-**`optimizePackageImports`** in `next.config.ts` — prevents full icon library bundles from loading on import.
+**URL-persisted filters** — filter and pagination state live in the query string. Refresh restores the same view.
 
 ---
 
@@ -116,7 +118,7 @@ npm run test:watch    # Watch mode
 npm run test:coverage # Coverage report
 ```
 
-49 tests covering format utilities, TanStack Query hooks (mocked `restClient`), and View components.
+Vitest + React Testing Library covering format utilities, TanStack Query hooks (mocked `restClient`), Views, and shared UI. Target coverage thresholds: 80% (see `vitest.config.ts`).
 
 ---
 
@@ -143,10 +145,6 @@ npm run test:coverage # Coverage report
 - Dashboard aggregates recomputed on every request — no caching layer on the backend
 
 ---
-
-## Design
-
-UI based on the Figma designs: [TarifCorp](https://www.figma.com/design/8efC3uSGdXhCLXFl4NmwKE/TarifCorp?m=auto&t=yPcgQYaY9w6Jg1Ux-1)
 
 ## Notes
 

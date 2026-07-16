@@ -13,15 +13,6 @@ export function Skeleton({ className }: SkeletonProps) {
   );
 }
 
-export function SkeletonCard() {
-  return (
-    <div className="rounded-lg border border-border bg-card p-6 space-y-3">
-      <Skeleton className="h-4 w-24" />
-      <Skeleton className="h-8 w-32" />
-    </div>
-  );
-}
-
 export function SkeletonTable({
   rows = 5,
   rowHeight = "h-11",
