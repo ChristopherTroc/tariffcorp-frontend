@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { Badge } from "./badge";
+import { Badge, ruleBadgeVariant } from "./badge";
 
 describe("Badge", () => {
   it("renders children text", () => {
@@ -31,6 +31,19 @@ describe("Badge", () => {
   it("applies rule variant classes (font-mono)", () => {
     const { container } = render(<Badge variant="rule">R3</Badge>);
     expect(container.firstChild).toHaveClass("font-mono");
+  });
+
+  it("applies R1 amber/gold rule variant", () => {
+    const { container } = render(<Badge variant="rule-r1">R1</Badge>);
+    expect(container.firstChild).toHaveClass("text-primary");
+    expect(container.firstChild).toHaveClass("bg-primary/15");
+  });
+
+  it("maps rule ids via ruleBadgeVariant", () => {
+    expect(ruleBadgeVariant("R1")).toBe("rule-r1");
+    expect(ruleBadgeVariant("R2")).toBe("rule-r2");
+    expect(ruleBadgeVariant("R3")).toBe("rule-r3");
+    expect(ruleBadgeVariant(null)).toBe("rule");
   });
 
   it("merges custom className", () => {

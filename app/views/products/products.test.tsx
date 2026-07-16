@@ -1,25 +1,33 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { ViewProductDetail } from "./product-detail";
-import type { IProductDetail } from "@/app/types/api";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { ViewProducts } from "./products";
+import type { IProductWithCount } from "@/app/types/api";
+
+const mockPush = vi.fn();
+let searchParams = new URLSearchParams();
 
 vi.mock("@/app/hooks/use-products");
-vi.mock("next/link", () => ({
-  default: ({ href, children }: { href: string; children: React.ReactNode }) => (
-    <a href={href}>{children}</a>
-  ),
-}));
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(),
-  useRouter: () => ({ push: vi.fn() }),
+  useSearchParams: () => searchParams,
+  useRouter: () => ({ push: mockPush }),
 }));
 
-import { useProductDetail, useUpdateProduct } from "@/app/hooks/use-products";
-const mockUseDetail = vi.mocked(useProductDetail);
-const mockUseUpdate = vi.mocked(useUpdateProduct);
+import { useProducts } from "@/app/hooks/use-products";
+const mockUseProducts = vi.mocked(useProducts);
 
-const mockDetail: IProductDetail = {
-  product: {
+const rows: IProductWithCount[] = [
+  {
+    id: "P-001",
+    name: "Wireless keyboard",
+    type: "electronics",
+    importCode: "8471.30.01",
+    countryOfOrigin: "CN",
+    value: 120,
+    weight: 0.6,
+    unit: "kg",
+    openFindingsCount: 0,
+  },
+  {
     id: "P-011",
     name: "Espresso beans 1kg",
     type: "consumable",
@@ -28,97 +36,112 @@ const mockDetail: IProductDetail = {
     value: 24,
     weight: 1,
     unit: "kg",
+    openFindingsCount: 2,
   },
-  transactions: [
-    {
-      id: "TX-00011",
-      date: "2026-02-15T00:00:00.000Z",
-      importer: "CafeImports LLC",
-      broker: "EuroTrade",
-      portOfEntry: "Miami",
-      importCode: "0901.21.00",
-      countryOfOrigin: "IT",
-      units: 60,
-      unitValue: 24,
-      totalValue: 1440,
-      dutyDeclared: 0,
-      productId: "P-011",
-    },
-  ],
-  findings: [
-    {
-      id: "f-11",
-      ruleId: "R3",
-      ruleName: "EU consumables high-value duty",
-      dutyComputed: 216,
-      exposure: 216,
-      transactionId: "TX-00011",
-      productId: "P-011",
-    },
-  ],
-};
+];
 
-describe("ViewProductDetail", () => {
+function mockList(data = rows) {
+  mockUseProducts.mockReturnValue({
+    isLoading: false,
+    isError: false,
+    data: {
+      data,
+      meta: { total: 42, page: 1, per_page: 10, total_pages: 5 },
+    },
+    refetch: vi.fn(),
+  } as unknown as ReturnType<typeof useProducts>);
+}
+
+describe("ViewProducts", () => {
   beforeEach(() => {
-    mockUseDetail.mockReset();
-    mockUseUpdate.mockReturnValue({
-      mutate: vi.fn(),
-      isPending: false,
-      isError: false,
-      error: null,
-      isSuccess: false,
-    } as unknown as ReturnType<typeof useUpdateProduct>);
+    mockUseProducts.mockReset();
+    mockPush.mockReset();
+    searchParams = new URLSearchParams();
   });
 
-  it("renders product fields", () => {
-    mockUseDetail.mockReturnValue({
-      isLoading: false,
-      isError: false,
-      data: { data: mockDetail },
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useProductDetail>);
-
-    render(<ViewProductDetail id="P-011" />);
-    expect(screen.getAllByText("Espresso beans 1kg").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("0901.21.00").length).toBeGreaterThan(0);
-    expect(screen.getByText("R3")).toBeInTheDocument();
+  it("renders header with SKU total", () => {
+    mockList();
+    render(<ViewProducts />);
+    expect(screen.getByText("Products")).toBeInTheDocument();
+    expect(screen.getByText(/Master catalog — 42 SKUs/i)).toBeInTheDocument();
   });
 
-  it("opens edit form when Edit Product clicked", () => {
-    mockUseDetail.mockReturnValue({
-      isLoading: false,
-      isError: false,
-      data: { data: mockDetail },
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useProductDetail>);
-
-    render(<ViewProductDetail id="P-011" />);
-    fireEvent.click(screen.getByText("Edit Product"));
-    expect(screen.getByText(/Save Changes/i)).toBeInTheDocument();
+  it("renders type chips including With findings", () => {
+    mockList();
+    render(<ViewProducts />);
+    expect(screen.getByRole("button", { name: "All types" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Apparel" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "With findings" }),
+    ).toBeInTheDocument();
   });
 
-  it("shows correction callout when edit form is open", () => {
-    mockUseDetail.mockReturnValue({
-      isLoading: false,
-      isError: false,
-      data: { data: mockDetail },
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useProductDetail>);
+  it("keeps type and With findings chips active together", () => {
+    searchParams = new URLSearchParams("type=electronics&has_findings=true");
+    mockList();
+    render(<ViewProducts />);
 
-    render(<ViewProductDetail id="P-011" />);
-    fireEvent.click(screen.getByText("Edit Product"));
-    expect(screen.getByText(/re-evaluate the checker/i)).toBeInTheDocument();
+    const electronics = screen.getByRole("button", { name: "Electronics" });
+    const withFindings = screen.getByRole("button", { name: "With findings" });
+    const allTypes = screen.getByRole("button", { name: "All types" });
+    expect(electronics.className).toContain("bg-primary/10");
+    expect(withFindings.className).toContain("bg-destructive/10");
+    expect(allTypes.className).not.toContain("bg-primary/10");
   });
 
-  it("shows findings ordered by exposure with exposure value", () => {
-    mockUseDetail.mockReturnValue({
-      isLoading: false,
-      isError: false,
-      data: { data: mockDetail },
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useProductDetail>);
+  it("preserves has_findings when selecting a type", () => {
+    searchParams = new URLSearchParams("has_findings=true");
+    mockList();
+    render(<ViewProducts />);
+    fireEvent.click(screen.getByRole("button", { name: "Consumable" }));
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.stringMatching(/type=consumable/),
+    );
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.stringMatching(/has_findings=true/),
+    );
+  });
 
-    render(<ViewProductDetail id="P-011" />);
-    expect(screen.getByText("+$216.00")).toBeInTheDocument();
+  it("shows open findings count without inventing exposure dollars", () => {
+    mockList();
+    render(<ViewProducts />);
+    expect(screen.getByText("[2]")).toBeInTheDocument();
+    expect(screen.queryByText(/\+\$/)).toBeNull();
+  });
+
+  it("shows em dash when product has no open findings", () => {
+    mockList([rows[0]]);
+    render(<ViewProducts />);
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
+  it("navigates to detail on row click", () => {
+    mockList();
+    render(<ViewProducts />);
+    fireEvent.click(screen.getByText("P-001"));
+    expect(mockPush).toHaveBeenCalledWith("/products/P-001");
+  });
+
+  it("filters current page rows by search query", () => {
+    searchParams = new URLSearchParams("q=Espresso");
+    mockList();
+    render(<ViewProducts />);
+    expect(screen.getByText("P-011")).toBeInTheDocument();
+    expect(screen.queryByText("P-001")).not.toBeInTheDocument();
+  });
+
+  it("renders error state with retry", () => {
+    const refetch = vi.fn();
+    mockUseProducts.mockReturnValue({
+      isLoading: false,
+      isError: true,
+      data: undefined,
+      refetch,
+    } as unknown as ReturnType<typeof useProducts>);
+
+    render(<ViewProducts />);
+    expect(screen.getByText(/failed to load products/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByText(/try again/i));
+    expect(refetch).toHaveBeenCalled();
   });
 });

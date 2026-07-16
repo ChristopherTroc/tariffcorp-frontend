@@ -1,1 +1,1 @@
-export { Badge } from "./badge";
+export { Badge, ruleBadgeVariant } from "./badge";

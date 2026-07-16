@@ -144,17 +144,10 @@ npm run test:coverage # Coverage report
 
 ---
 
-## AI Usage
+## Design
 
-The majority of implementation was generated with AI assistance (Kilo / Claude).
+UI based on the Figma designs: [TarifCorp](https://www.figma.com/design/8efC3uSGdXhCLXFl4NmwKE/TarifCorp?m=auto&t=yPcgQYaY9w6Jg1Ux-1)
 
-| Area | AI contribution | Validation |
-|------|----------------|------------|
-| Project scaffold | Full — `create-next-app` + dependency setup | Verified `npm run build` and `npm run dev` pass |
-| `app/types/api.ts` | Generated from backend port interfaces and PRD | Cross-checked field by field against Swagger at `/api/docs` |
-| TanStack Query hooks | Generated patterns, mock test structure | All 13 hook tests reviewed and run manually |
-| View components | Generated structure, Tailwind classes | Tested in browser across light/dark mode and 3 viewport sizes |
-| Format utilities | Generated | 13 unit tests written and verified |
-| Dark mode tokens | Generated token mapping | Manually verified contrast ratios in both themes |
+## Notes
 
-All AI-generated code was reviewed for correctness. The golden path (Dashboard → Product → Edit → findings refresh) was verified end-to-end manually.
+Planning and change workflow used OpenSpec.

@@ -1,16 +1,23 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
-import { TransactionFilters } from "./transaction-filters";
+import {
+  TransactionFilters,
+  TransactionSearch,
+} from "./transaction-filters";
 
 const mockPush = vi.fn();
+let searchParams = new URLSearchParams();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => searchParams,
 }));
 
 describe("TransactionFilters", () => {
-  beforeEach(() => mockPush.mockReset());
+  beforeEach(() => {
+    mockPush.mockReset();
+    searchParams = new URLSearchParams();
+  });
 
   it("renders All, Matched, and Unmatched status buttons", () => {
     render(<TransactionFilters />);
@@ -19,10 +26,14 @@ describe("TransactionFilters", () => {
     expect(screen.getByText("Unmatched")).toBeInTheDocument();
   });
 
-  it("renders broker and port text inputs", () => {
+  it("does not render broker or port text inputs", () => {
     render(<TransactionFilters />);
-    expect(screen.getByPlaceholderText(/filter by broker/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/filter by port/i)).toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText(/filter by broker/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText(/filter by port/i),
+    ).not.toBeInTheDocument();
   });
 
   it("clicking Matched pushes status=matched to router", () => {
@@ -42,60 +53,48 @@ describe("TransactionFilters", () => {
     fireEvent.click(screen.getByText("All"));
     expect(mockPush).toHaveBeenCalledWith("/transactions?");
   });
+});
 
-  it("active status button reflects current searchParams", () => {
-    vi.doMock("next/navigation", () => ({
-      useRouter: () => ({ push: mockPush }),
-      useSearchParams: () => new URLSearchParams("status=unmatched"),
-    }));
+describe("TransactionSearch", () => {
+  beforeEach(() => {
+    mockPush.mockReset();
+    searchParams = new URLSearchParams();
   });
 
-  it("pre-fills broker input from searchParams", () => {
-    vi.doMock("next/navigation", () => ({
-      useRouter: () => ({ push: mockPush }),
-      useSearchParams: () => new URLSearchParams("broker=EuroTrade"),
-    }));
-  });
-
-  it("broker input onChange triggers router push after debounce", async () => {
+  it("debounces q param updates", async () => {
     vi.useFakeTimers();
-    render(<TransactionFilters />);
-
-    const brokerInput = screen.getByPlaceholderText(/filter by broker/i);
+    render(<TransactionSearch />);
+    const input = screen.getByPlaceholderText(/search id, importer, broker/i);
     await act(async () => {
-      fireEvent.change(brokerInput, { target: { value: "Acme" } });
-      vi.advanceTimersByTime(300);
+      fireEvent.change(input, { target: { value: "TX-00001" } });
+      vi.advanceTimersByTime(250);
     });
-
-    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("broker=Acme"));
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.stringContaining("q=TX-00001"),
+    );
     vi.useRealTimers();
   });
 
-  it("port input onChange triggers router push after debounce", async () => {
-    vi.useFakeTimers();
-    render(<TransactionFilters />);
-
-    const portInput = screen.getByPlaceholderText(/filter by port/i);
-    await act(async () => {
-      fireEvent.change(portInput, { target: { value: "Miami" } });
-      vi.advanceTimersByTime(300);
-    });
-
-    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("port_of_entry=Miami"));
-    vi.useRealTimers();
+  it("seeds the input from broker deep-link when q is absent", () => {
+    searchParams = new URLSearchParams("broker=Beacon+Trade+Group");
+    render(<TransactionSearch />);
+    expect(
+      screen.getByPlaceholderText(/search id, importer, broker/i),
+    ).toHaveValue("Beacon Trade Group");
   });
 
-  it("port input onChange does not push before debounce delay elapses", async () => {
+  it("clears broker and port filters when search is cleared", async () => {
     vi.useFakeTimers();
-    render(<TransactionFilters />);
-
-    const portInput = screen.getByPlaceholderText(/filter by port/i);
+    searchParams = new URLSearchParams(
+      "broker=Beacon+Trade+Group&q=Beacon+Trade+Group",
+    );
+    render(<TransactionSearch />);
+    const input = screen.getByPlaceholderText(/search id, importer, broker/i);
     await act(async () => {
-      fireEvent.change(portInput, { target: { value: "LA" } });
-      vi.advanceTimersByTime(100); // before the 300ms debounce
+      fireEvent.change(input, { target: { value: "" } });
+      vi.advanceTimersByTime(250);
     });
-
-    expect(mockPush).not.toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith("/transactions?");
     vi.useRealTimers();
   });
 });

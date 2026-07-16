@@ -150,7 +150,7 @@ describe("ViewTransactionDetail", () => {
     expect(exposureEl.className).toContain("text-destructive");
   });
 
-  it("product detail link points to /products/:id", () => {
+  it("View detail and Fix Product links point to /products/:id", () => {
     mockUseDetail.mockReturnValue({
       isLoading: false,
       isError: false,
@@ -159,8 +159,43 @@ describe("ViewTransactionDetail", () => {
     } as unknown as ReturnType<typeof useTransactionDetail>);
 
     render(<ViewTransactionDetail id="TX-00001" />);
-    const link = screen.getByText(/view product detail/i).closest("a");
-    expect(link?.getAttribute("href")).toBe("/products/P-001");
+    const viewDetail = screen.getByText(/view detail/i).closest("a");
+    expect(viewDetail?.getAttribute("href")).toBe("/products/P-001");
+    const fixProduct = screen.getByText(/fix product/i).closest("a");
+    expect(fixProduct?.getAttribute("href")).toBe("/products/P-001");
+  });
+
+  it("renders matched badge and meta line in header", () => {
+    mockUseDetail.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: { data: matchedDetail },
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTransactionDetail>);
+
+    render(<ViewTransactionDetail id="TX-00001" />);
+    expect(screen.getByText("Matched")).toBeInTheDocument();
+    expect(screen.getAllByText(/Los Angeles/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/GlobalTrade Brokers/).length).toBeGreaterThan(0);
+  });
+
+  it("does not show Fix Product when unmatched", () => {
+    const unmatched: ITransactionDetail = {
+      ...matchedDetail,
+      transaction: { ...matchedDetail.transaction, productId: null },
+      product: null,
+      finding: null,
+    };
+    mockUseDetail.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: { data: unmatched },
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTransactionDetail>);
+
+    render(<ViewTransactionDetail id="TX-00043" />);
+    expect(screen.queryByText(/fix product/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Unmatched")).toBeInTheDocument();
   });
 
   it("shows no product section text when product is null but transaction is matched by finding", () => {

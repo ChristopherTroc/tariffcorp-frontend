@@ -3,19 +3,25 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { ViewFindings } from "./findings";
 import type { IFinding } from "@/app/types/api";
 
+const mockPush = vi.fn();
+let searchParams = new URLSearchParams();
+
 vi.mock("@/app/hooks/use-findings");
+vi.mock("@/app/hooks/use-dashboard");
 vi.mock("next/link", () => ({
   default: ({ href, children }: { href: string; children: React.ReactNode }) => (
     <a href={href}>{children}</a>
   ),
 }));
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(),
-  useRouter: () => ({ push: vi.fn() }),
+  useSearchParams: () => searchParams,
+  useRouter: () => ({ push: mockPush }),
 }));
 
 import { useFindings } from "@/app/hooks/use-findings";
+import { useDashboard } from "@/app/hooks/use-dashboard";
 const mockUseFindings = vi.mocked(useFindings);
+const mockUseDashboard = vi.mocked(useDashboard);
 
 const mockFindings: IFinding[] = [
   {
@@ -38,75 +44,103 @@ const mockFindings: IFinding[] = [
   },
 ];
 
-describe("ViewFindings", () => {
-  beforeEach(() => mockUseFindings.mockReset());
+function mockList(data = mockFindings) {
+  mockUseFindings.mockReturnValue({
+    isLoading: false,
+    isError: false,
+    data: {
+      data,
+      meta: { total: data.length, page: 1, per_page: 10, total_pages: 1 },
+    },
+    refetch: vi.fn(),
+  } as unknown as ReturnType<typeof useFindings>);
+}
 
-  it("renders findings with rule badges and exposure", () => {
-    mockUseFindings.mockReturnValue({
+describe("ViewFindings", () => {
+  beforeEach(() => {
+    mockUseFindings.mockReset();
+    mockUseDashboard.mockReset();
+    mockPush.mockReset();
+    searchParams = new URLSearchParams();
+    mockUseDashboard.mockReturnValue({
+      data: { data: { totalExposure: 4023 } },
       isLoading: false,
       isError: false,
-      data: {
-        data: mockFindings,
-        meta: { total: 2, page: 1, per_page: 50, total_pages: 1 },
-      },
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useFindings>);
+    } as unknown as ReturnType<typeof useDashboard>);
+  });
 
+  it("renders header with Total Exposure from dashboard", () => {
+    mockList();
     render(<ViewFindings />);
-    expect(screen.getByText("R3")).toBeInTheDocument();
-    expect(screen.getByText("R1")).toBeInTheDocument();
+    expect(screen.getByText("Findings")).toBeInTheDocument();
+    expect(screen.getByText(/All checker discrepancies/i)).toBeInTheDocument();
+    expect(screen.getByText("Total Exposure")).toBeInTheDocument();
+    expect(screen.getByText("$4,023.00")).toBeInTheDocument();
+  });
+
+  it("renders All rules / R1 / R2 / R3 chips", () => {
+    mockList();
+    render(<ViewFindings />);
+    expect(screen.getByRole("button", { name: "All rules" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "R1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "R2" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "R3" })).toBeInTheDocument();
+  });
+
+  it("filters current page rows by rule query param", () => {
+    searchParams = new URLSearchParams("rule=R1");
+    mockList();
+    render(<ViewFindings />);
+    expect(screen.getByText("TX-00001")).toBeInTheDocument();
+    expect(screen.queryByText("TX-00011")).not.toBeInTheDocument();
+  });
+
+  it("sets rule in URL when chip clicked", () => {
+    mockList();
+    render(<ViewFindings />);
+    fireEvent.click(screen.getByRole("button", { name: "R2" }));
+    expect(mockPush).toHaveBeenCalledWith(expect.stringMatching(/rule=R2/));
+  });
+
+  it("renders findings with rule badges and exposure", () => {
+    mockList();
+    render(<ViewFindings />);
+    expect(screen.getAllByText("R3").length).toBeGreaterThan(0);
     expect(screen.getByText("+$384.00")).toBeInTheDocument();
     expect(screen.getByText("+$100.00")).toBeInTheDocument();
+    expect(screen.getByText("EU consumables high-value duty")).toBeInTheDocument();
   });
 
   it("positive exposure has destructive text class", () => {
-    mockUseFindings.mockReturnValue({
-      isLoading: false,
-      isError: false,
-      data: {
-        data: mockFindings,
-        meta: { total: 2, page: 1, per_page: 50, total_pages: 1 },
-      },
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useFindings>);
-
+    mockList();
     render(<ViewFindings />);
     const exposure = screen.getAllByText("+$384.00")[0];
     expect(exposure.className).toContain("text-destructive");
   });
 
-  it('"Fix Product →" links to /products/:id', () => {
-    mockUseFindings.mockReturnValue({
-      isLoading: false,
-      isError: false,
-      data: {
-        data: mockFindings,
-        meta: { total: 2, page: 1, per_page: 50, total_pages: 1 },
-      },
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useFindings>);
-
+  it("Fix Product links to /products/:id", () => {
+    mockList();
     render(<ViewFindings />);
-    const fixLinks = screen.getAllByText("Fix Product →");
+    const fixLinks = screen.getAllByText("Fix Product");
     expect(fixLinks[0].closest("a")?.getAttribute("href")).toBe(
       "/products/P-011",
     );
   });
 
-  it("transaction IDs link to /transactions/:id", () => {
-    mockUseFindings.mockReturnValue({
-      isLoading: false,
-      isError: false,
-      data: {
-        data: mockFindings,
-        meta: { total: 2, page: 1, per_page: 50, total_pages: 1 },
-      },
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useFindings>);
-
+  it("product id links to /products/:id", () => {
+    mockList();
     render(<ViewFindings />);
-    const txLink = screen.getByText("TX-00011").closest("a");
-    expect(txLink?.getAttribute("href")).toBe("/transactions/TX-00011");
+    const productLinks = screen.getAllByRole("link", { name: "P-011" });
+    expect(productLinks[0]).toHaveAttribute("href", "/products/P-011");
+  });
+
+  it("transaction IDs link to /transactions/:id", () => {
+    mockList();
+    render(<ViewFindings />);
+    expect(screen.getByText("TX-00011").closest("a")).toHaveAttribute(
+      "href",
+      "/transactions/TX-00011",
+    );
   });
 
   it("calls retry when error state button is clicked", () => {
@@ -123,31 +157,6 @@ describe("ViewFindings", () => {
     expect(mockRefetch).toHaveBeenCalledTimes(1);
   });
 
-  it("pagination triggers handlePageChange and pushes to router", () => {
-    const mockPush = vi.fn();
-    vi.doMock("next/navigation", () => ({
-      useSearchParams: () => new URLSearchParams(),
-      useRouter: () => ({ push: mockPush }),
-    }));
-
-    mockUseFindings.mockReturnValue({
-      isLoading: false,
-      isError: false,
-      data: {
-        data: mockFindings,
-        meta: { total: 20, page: 1, per_page: 10, total_pages: 3 },
-      },
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useFindings>);
-
-    render(<ViewFindings />);
-    expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Next"));
-    // handlePageChange pushes the new page to the router
-    // (mockPush comes from the module-level vi.mock, not doMock — assert navigation is in DOM)
-    expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
-  });
-
   it("shows skeleton when loading", () => {
     mockUseFindings.mockReturnValue({
       isLoading: true,
@@ -161,17 +170,19 @@ describe("ViewFindings", () => {
   });
 
   it("shows empty state when no findings", () => {
-    mockUseFindings.mockReturnValue({
-      isLoading: false,
-      isError: false,
-      data: {
-        data: [],
-        meta: { total: 0, page: 1, per_page: 50, total_pages: 0 },
-      },
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useFindings>);
-
+    mockList([]);
     render(<ViewFindings />);
     expect(screen.getByText(/no findings yet/i)).toBeInTheDocument();
+  });
+
+  it("shows No product when productId is null", () => {
+    mockList([
+      {
+        ...mockFindings[0],
+        productId: null,
+      },
+    ]);
+    render(<ViewFindings />);
+    expect(screen.getByText(/no product/i)).toBeInTheDocument();
   });
 });

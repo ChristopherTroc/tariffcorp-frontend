@@ -43,16 +43,16 @@ describe("EditProductForm", () => {
     expect((screen.getByDisplayValue("120") as HTMLInputElement).value).toBe("120");
   });
 
-  it("renders all product type options in the select", () => {
+  it("renders Figma edit fields (name disabled, import code, origin, value, weight)", () => {
     mockUseUpdate.mockReturnValue(defaultMutate());
     render(<EditProductForm product={mockProduct} />);
 
-    const select = screen.getByDisplayValue("electronics") as HTMLSelectElement;
-    const options = Array.from(select.options).map((o) => o.value);
-    expect(options).toContain("consumable");
-    expect(options).toContain("apparel");
-    expect(options).toContain("furniture");
-    expect(options).toContain("raw_material");
+    expect(screen.getByDisplayValue("Wireless keyboard")).toBeDisabled();
+    expect(screen.getByDisplayValue("8471.30.01")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("CN")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("120")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("0.6")).toBeInTheDocument();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
   });
 
   it("shows validation error when value is set to 0", async () => {
@@ -157,20 +157,12 @@ describe("EditProductForm", () => {
     expect(importCodeInput.value).toBe("9999.99.99");
   });
 
-  it("onChange for type select field updates state", () => {
+  it("onChange for weight field updates state", () => {
     mockUseUpdate.mockReturnValue(defaultMutate());
     render(<EditProductForm product={mockProduct} />);
-    const typeSelect = screen.getByDisplayValue("electronics") as HTMLSelectElement;
-    fireEvent.change(typeSelect, { target: { value: "apparel" } });
-    expect(typeSelect.value).toBe("apparel");
-  });
-
-  it("onChange for unit field updates state", () => {
-    mockUseUpdate.mockReturnValue(defaultMutate());
-    render(<EditProductForm product={mockProduct} />);
-    const unitInput = screen.getByDisplayValue("kg") as HTMLInputElement;
-    fireEvent.change(unitInput, { target: { value: "lb" } });
-    expect(unitInput.value).toBe("lb");
+    const weightInput = screen.getByDisplayValue("0.6") as HTMLInputElement;
+    fireEvent.change(weightInput, { target: { value: "1.2" } });
+    expect(weightInput.value).toBe("1.2");
   });
 
   it("onSuccess callback closes the form via onSuccess prop", async () => {

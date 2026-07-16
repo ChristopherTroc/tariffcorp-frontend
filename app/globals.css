@@ -1,58 +1,69 @@
 @import "tailwindcss";
 
-/* ─── Design tokens ─────────────────────────────────────────────────────────── */
+/* ─── Design tokens (Figma TarifCorp shell) ─────────────────────────────────── */
 :root {
-  /* Backgrounds — page is light grey so white cards stand out */
-  --background: #f1f5f9;       /* slate-100: subtle grey page background */
-  --foreground: #0f172a;       /* slate-900: near-black, maximum contrast */
-  --card: #ffffff;             /* pure white cards pop against the grey page */
+  /* Light mode — readable counterpart; amber brand for consistency */
+  --background: #f1f5f9;
+  --foreground: #0f172a;
+  --card: #ffffff;
   --card-foreground: #0f172a;
-  --muted: #e2e8f0;            /* slate-200: slightly darker than page for muted areas */
-  --muted-foreground: #475569; /* slate-600: darker than before for better readability */
+  --muted: #e2e8f0;
+  --muted-foreground: #475569;
   --popover: #ffffff;
   --popover-foreground: #0f172a;
 
-  /* Actions */
-  --primary: #1d4ed8;          /* blue-700: slightly darker blue for better contrast on white */
+  --primary: #d97706; /* amber-600 */
   --primary-foreground: #ffffff;
   --secondary: #e2e8f0;
   --secondary-foreground: #0f172a;
   --accent: #e2e8f0;
   --accent-foreground: #0f172a;
 
-  /* States */
-  --destructive: #b91c1c;      /* red-700: darker for better contrast */
+  --destructive: #b91c1c;
   --destructive-foreground: #ffffff;
-  --border: #cbd5e1;           /* slate-300: more visible borders */
+  --border: #cbd5e1;
   --input: #cbd5e1;
-  --ring: #1d4ed8;
+  --ring: #d97706;
 
-  /* Fonts */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+  --chart-1: #f59e0b;
+  --chart-2: #3b82f6;
+  --chart-3: #a855f7;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-/* next-themes adds .dark to <html> — no @media needed */
+/* next-themes adds .dark to <html> — Figma dark shell is the primary target */
 .dark {
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --card: #1e293b;
-  --card-foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --popover: #1e293b;
-  --popover-foreground: #f8fafc;
-  --primary: #3b82f6;
-  --primary-foreground: #ffffff;
-  --secondary: #1e293b;
-  --secondary-foreground: #f8fafc;
-  --accent: #1e293b;
-  --accent-foreground: #f8fafc;
-  --destructive: #ef4444;
+  --background: #070b14;
+  --foreground: #dce4f0;
+  --card: #0c1221;
+  --card-foreground: #dce4f0;
+  --muted: #141c2e;
+  --muted-foreground: #6b7e9a;
+  --popover: #0c1221;
+  --popover-foreground: #dce4f0;
+
+  --primary: #f59e0b;
+  --primary-foreground: #070b14;
+  --secondary: #141c2e;
+  --secondary-foreground: #dce4f0;
+  --accent: #141c2e;
+  --accent-foreground: #dce4f0;
+
+  --destructive: #ff6467;
   --destructive-foreground: #ffffff;
-  --border: #334155;
-  --input: #334155;
-  --ring: #3b82f6;
+  --border: rgba(255, 255, 255, 0.07);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: #f59e0b;
+
+  --sidebar: #0c1221;
+  --sidebar-foreground: #dce4f0;
+  --chart-1: #f59e0b;
+  --chart-2: #3b82f6;
+  --chart-3: #a855f7;
 }
 
 /* ─── Tailwind v4 theme mapping ─────────────────────────────────────────────── */
@@ -76,6 +87,11 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { TopOffendersList } from "./top-offenders-list";
 
@@ -25,6 +25,8 @@ describe("TopOffendersList", () => {
     expect(screen.getByText("$1,091.50")).toBeInTheDocument();
     expect(screen.getByText("GlobalTrade Brokers")).toBeInTheDocument();
     expect(screen.getByText("$500.00")).toBeInTheDocument();
+    expect(screen.getByText("1")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
   });
 
   it("each item is a link with the correct href", () => {

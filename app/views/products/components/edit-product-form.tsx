@@ -1,22 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useUpdateProduct } from "@/app/hooks/use-products";
-import type { IProduct, IUpdateProductDto, TProductType } from "@/app/types/api";
+import type { IProduct, IUpdateProductDto } from "@/app/types/api";
 import { cn } from "@/app/utils/cn";
-
-const PRODUCT_TYPES: TProductType[] = [
-  "electronics",
-  "consumable",
-  "apparel",
-  "furniture",
-  "raw_material",
-];
 
 interface EditProductFormProps {
   product: IProduct;
+  formId?: string;
+  showActions?: boolean;
   onSuccess?: () => void;
   onCancel?: () => void;
+  onPendingChange?: (isPending: boolean) => void;
+  linkedTransactionCount?: number;
 }
 
 interface FormErrors {
@@ -26,8 +22,12 @@ interface FormErrors {
 
 export function EditProductForm({
   product,
+  formId = "product-classification-form",
+  showActions = true,
   onSuccess,
   onCancel,
+  onPendingChange,
+  linkedTransactionCount,
 }: EditProductFormProps) {
   const { mutate, isPending, isError, error } = useUpdateProduct();
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
@@ -40,8 +40,12 @@ export function EditProductForm({
     weight: product.weight,
     unit: product.unit,
   });
-
   const [errors, setErrors] = useState<FormErrors>({});
+
+  useEffect(() => {
+    onPendingChange?.(isPending);
+    return () => onPendingChange?.(false);
+  }, [isPending, onPendingChange]);
 
   function validate(): boolean {
     const errs: FormErrors = {};
@@ -57,6 +61,7 @@ export function EditProductForm({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isPending) return;
     if (!validate()) return;
 
     mutate(
@@ -81,10 +86,11 @@ export function EditProductForm({
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
   ].join(" ");
 
-  const labelClass = "block text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1";
+  const labelClass =
+    "block text-[11px] font-medium tracking-wide text-muted-foreground uppercase mb-1";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form id={formId} onSubmit={handleSubmit} className="space-y-4">
       {toast && (
         <div
           className={cn(
@@ -98,7 +104,26 @@ export function EditProductForm({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {typeof linkedTransactionCount === "number" && linkedTransactionCount > 0 && (
+        <div className="rounded-md border border-primary/35 bg-primary/10 px-4 py-3 text-sm text-foreground backdrop-blur-sm">
+          Saving will immediately re-evaluate the checker for all{" "}
+          {linkedTransactionCount} linked transaction
+          {linkedTransactionCount !== 1 ? "s" : ""}.
+        </div>
+      )}
+
+      {/* Figma edit grid: Name, Import Code, Country of Origin, Unit Value, Weight */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div>
+          <label className={labelClass}>Name</label>
+          <input
+            type="text"
+            value={product.name}
+            disabled
+            className={cn(inputClass, "opacity-70")}
+          />
+        </div>
+
         <div>
           <label className={labelClass}>Import Code</label>
           <input
@@ -114,34 +139,23 @@ export function EditProductForm({
           <input
             type="text"
             value={form.countryOfOrigin ?? ""}
-            onChange={(e) => setForm((f) => ({ ...f, countryOfOrigin: e.target.value }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, countryOfOrigin: e.target.value }))
+            }
             className={inputClass}
           />
         </div>
 
         <div>
-          <label className={labelClass}>Type</label>
-          <select
-            value={form.type}
-            onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as TProductType }))}
-            className={inputClass}
-          >
-            {PRODUCT_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t.replace("_", " ")}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className={labelClass}>Value (USD)</label>
+          <label className={labelClass}>Unit Value ($)</label>
           <input
             type="number"
             step="0.01"
             min="0.01"
             value={form.value ?? ""}
-            onChange={(e) => setForm((f) => ({ ...f, value: Number(e.target.value) }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, value: Number(e.target.value) }))
+            }
             className={cn(inputClass, errors.value && "border-destructive")}
           />
           {errors.value && (
@@ -156,22 +170,14 @@ export function EditProductForm({
             step="0.01"
             min="0.01"
             value={form.weight ?? ""}
-            onChange={(e) => setForm((f) => ({ ...f, weight: Number(e.target.value) }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, weight: Number(e.target.value) }))
+            }
             className={cn(inputClass, errors.weight && "border-destructive")}
           />
           {errors.weight && (
             <p className="mt-1 text-xs text-destructive">{errors.weight}</p>
           )}
-        </div>
-
-        <div>
-          <label className={labelClass}>Unit</label>
-          <input
-            type="text"
-            value={form.unit ?? ""}
-            onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
-            className={inputClass}
-          />
         </div>
       </div>
 
@@ -181,28 +187,30 @@ export function EditProductForm({
         </p>
       )}
 
-      <div className="flex items-center gap-3 pt-2">
-        <button
-          type="submit"
-          disabled={isPending}
-          className={[
-            "px-4 py-2 text-sm font-medium rounded-md transition-colors",
-            "bg-primary text-primary-foreground hover:bg-primary/90",
-            "disabled:opacity-50 disabled:cursor-not-allowed",
-          ].join(" ")}
-        >
-          {isPending ? "Saving…" : "Save Changes"}
-        </button>
-        {onCancel && (
+      {showActions && (
+        <div className="flex items-center gap-3 pt-2">
           <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium rounded-md border border-border hover:bg-muted transition-colors"
+            type="submit"
+            disabled={isPending}
+            className={[
+              "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+              "bg-primary text-primary-foreground hover:bg-primary/90",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+            ].join(" ")}
           >
-            Cancel
+            {isPending ? "Saving…" : "Save Changes"}
           </button>
-        )}
-      </div>
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 text-sm font-medium rounded-md border border-border hover:bg-muted transition-colors"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      )}
     </form>
   );
 }

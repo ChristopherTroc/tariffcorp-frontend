@@ -22,6 +22,8 @@ export interface ITransaction {
   totalValue: number;
   dutyDeclared: number;
   productId: string | null; // null = unmatched
+  /** Optional list enrichment — absent today; UI must not invent values. */
+  findingExposure?: number | null;
 }
 
 export interface IProduct {
