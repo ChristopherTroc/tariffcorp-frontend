@@ -140,25 +140,25 @@ export function ViewFindings() {
             />
           ) : (
             <div className="overflow-x-auto rounded-lg border border-border bg-card">
-              <table className="w-full table-fixed text-sm">
+              <table className="w-full min-w-[720px] table-fixed text-sm">
                 <colgroup>
                   <col className="w-[11%]" />
-                  <col className="w-[13%]" />
-                  <col className="w-[20%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[24%]" />
                   <col className="w-[12%]" />
                   <col className="w-[12%]" />
                   <col className="w-[12%]" />
-                  <col className="w-[20%]" />
+                  <col className="w-[18%]" />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-border">
                     <th className={thClass()}>Transaction</th>
                     <th className={thClass()}>Product</th>
-                    <th className={thClass("pr-0")}>Rule</th>
-                    <th className={thClass("pl-0 text-right")}>Declared</th>
+                    <th className={thClass()}>Rule</th>
+                    <th className={thClass("text-right")}>Declared</th>
                     <th className={thClass("text-right")}>Computed</th>
-                    <th className={thClass("pr-1 text-right")}>Exposure ↓</th>
-                    <th className={thClass("pl-24")}>Action</th>
+                    <th className={thClass("text-right")}>Exposure ↓</th>
+                    <th className={thClass("text-right")}>Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -220,7 +220,7 @@ function FindingRow({ finding }: { finding: IFinding }) {
           <span className="text-sm text-muted-foreground">—</span>
         )}
       </td>
-      <td className="px-3 py-2.5 pr-0">
+      <td className="px-3 py-2.5">
         <div className="flex min-w-0 items-center gap-2">
           {finding.ruleId ? (
             <Badge variant={ruleBadgeVariant(finding.ruleId)} className="shrink-0">
@@ -232,13 +232,13 @@ function FindingRow({ finding }: { finding: IFinding }) {
           </span>
         </div>
       </td>
-      <td className="px-2 py-2.5 pl-0 text-right whitespace-nowrap text-muted-foreground">
+      <td className="px-3 py-2.5 text-right whitespace-nowrap text-muted-foreground">
         {formatCurrency(declared)}
       </td>
       <td className="px-3 py-2.5 text-right whitespace-nowrap text-foreground">
         {formatCurrency(finding.dutyComputed)}
       </td>
-      <td className="px-2 py-2.5 pr-1 text-right whitespace-nowrap">
+      <td className="px-3 py-2.5 text-right whitespace-nowrap">
         <span
           className={cn(
             "font-semibold",
@@ -252,7 +252,7 @@ function FindingRow({ finding }: { finding: IFinding }) {
           {formatExposure(finding.exposure)}
         </span>
       </td>
-      <td className="px-3 py-2.5 pl-24">
+      <td className="px-3 py-2.5 text-right">
         {finding.productId ? (
           <Link
             href={`/products/${finding.productId}`}
