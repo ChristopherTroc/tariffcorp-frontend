@@ -134,7 +134,7 @@ export function Sidebar() {
           <div className="mb-3 flex items-center justify-between">
             <div>
               <p className="font-mono text-[10px] tracking-[1px] text-muted-foreground uppercase">
-                Acme Corp
+                Align 
               </p>
               <p className="mt-0.5 text-[10px] text-muted-foreground/60">
                 Single-tenant · Read-only
